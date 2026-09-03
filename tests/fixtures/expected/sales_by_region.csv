@@ -1,0 +1,6 @@
+region,order_count,total_sales,returns,return_rate
+South,24,36737.95,6,0.25
+East,18,35585.35,3,0.167
+West,14,32624.8,2,0.143
+North,23,29891.95,3,0.13
+Unknown,1,3196.0,1,1.0

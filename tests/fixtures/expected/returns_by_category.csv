@@ -1,0 +1,5 @@
+product_category,order_count,returns,return_rate
+Electronics,26,7,0.269
+Home,17,4,0.235
+Sports,16,2,0.125
+Books,21,2,0.095
