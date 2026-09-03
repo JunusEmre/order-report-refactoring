@@ -1,6 +1,6 @@
 """Characterization tests for the original order_report.py behaviour.
 
-These tests run the unchanged program in an isolated temporary directory
+These tests run the root entry point in an isolated temporary directory
 and compare its CSV reports with protected Stage 1 fixtures. They exist
 so later refactoring cannot change calculations, cleaning rules, report
 structure, or file names unnoticed.
@@ -18,6 +18,7 @@ import pytest
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 ORIGINAL_SCRIPT = REPO_ROOT / "order_report.py"
+PACKAGE_DIR = REPO_ROOT / "order_reporting"
 ORIGINAL_ORDERS = REPO_ROOT / "data" / "orders.csv"
 EXPECTED_DIR = Path(__file__).resolve().parent / "fixtures" / "expected"
 
@@ -30,8 +31,13 @@ REPORT_FILES = (
 
 
 def run_original_program(tmp_path: Path) -> subprocess.CompletedProcess:
-    """Copy the original script and data, then run the script in tmp_path."""
+    """Copy the entry point, package, and data, then run the script in tmp_path."""
     shutil.copy2(ORIGINAL_SCRIPT, tmp_path / "order_report.py")
+    shutil.copytree(
+        PACKAGE_DIR,
+        tmp_path / "order_reporting",
+        ignore=shutil.ignore_patterns("__pycache__"),
+    )
 
     data_dir = tmp_path / "data"
     data_dir.mkdir()
