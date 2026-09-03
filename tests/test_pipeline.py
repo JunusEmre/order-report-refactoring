@@ -6,8 +6,13 @@ import pandas as pd
 import pytest
 
 from order_reporting.config import ReportConfig
-from order_reporting.exceptions import ReportOutputError
-from order_reporting.pipeline import generate_reports, run_pipeline, save_reports
+from order_reporting.exceptions import DataValidationError, ReportOutputError
+from order_reporting.pipeline import (
+    generate_reports,
+    process_orders,
+    run_pipeline,
+    save_reports,
+)
 
 REPORT_FILES = (
     "overview.csv",
@@ -134,3 +139,61 @@ def test_generate_reports_logs_operational_info(
     assert "passed validation" in text
     assert "Creating order reports" in text
     assert "Saved " not in text
+
+
+def _sample_orders_frame() -> pd.DataFrame:
+    return pd.DataFrame(
+        {
+            "order_id": ["O1"],
+            "order_date": ["2026-01-01"],
+            "customer_id": ["C1"],
+            "region": ["North"],
+            "product_category": ["Books"],
+            "quantity": [2],
+            "unit_price": [100],
+            "discount": [0.10],
+            "returned": ["false"],
+        }
+    )
+
+
+def test_process_orders_returns_four_reports_without_writing_files(tmp_path: Path):
+    orders = _sample_orders_frame()
+
+    reports = process_orders(orders)
+
+    assert list(reports.keys()) == list(REPORT_FILES)
+    overview = reports["overview.csv"].set_index("metric")["value"]
+    assert overview["total_sales"] == 180.0
+    assert overview["order_count"] == 1
+    assert overview["return_count"] == 0
+    assert list(tmp_path.glob("**/*.csv")) == []
+
+
+def test_process_orders_does_not_mutate_input_dataframe():
+    orders = _sample_orders_frame()
+    original = orders.copy()
+
+    process_orders(orders)
+
+    pd.testing.assert_frame_equal(orders, original)
+
+
+def test_process_orders_raises_for_missing_columns():
+    orders = _sample_orders_frame().drop(columns=["discount"])
+
+    with pytest.raises(DataValidationError, match="discount"):
+        process_orders(orders)
+
+
+def test_process_orders_matches_file_based_generate_reports(tmp_path: Path):
+    input_path = tmp_path / "orders.csv"
+    _write_sample_orders(input_path)
+    from_file = generate_reports(
+        ReportConfig(input_path=input_path, output_dir=tmp_path / "unused")
+    )
+    from_memory = process_orders(pd.read_csv(input_path))
+
+    for filename in REPORT_FILES:
+        pd.testing.assert_frame_equal(from_file[filename], from_memory[filename])
+
