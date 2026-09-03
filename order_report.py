@@ -1,27 +1,31 @@
 """Command-line entry point for the order report program."""
 
+import logging
+
 from order_reporting.config import DEFAULT_CONFIG
+from order_reporting.exceptions import OrderReportError
+from order_reporting.logging_config import configure_logging
 from order_reporting.pipeline import generate_reports, save_reports
 
+logger = logging.getLogger(__name__)
 
-def main() -> None:
-    """Read the default orders file and write the four CSV reports."""
-    print("Startar orderrapport")
+
+def main() -> int:
+    """Run the order report pipeline and return a process exit code."""
+    configure_logging()
     try:
+        logger.info("Starting the order report.")
         reports = generate_reports(DEFAULT_CONFIG)
-        row_count = int(
-            reports["overview.csv"].set_index("metric").at["order_count", "value"]
-        )
-        print("Läste in", row_count, "rader")
         save_reports(reports, DEFAULT_CONFIG.output_dir)
-        print("Sparade overview.csv")
-        print("Sparade sales_by_category.csv")
-        print("Sparade sales_by_region.csv")
-        print("Sparade returns_by_category.csv")
-        print("Klart")
-    except Exception as error:
-        print("Något gick fel:", error)
+        logger.info("Order report completed successfully.")
+        return 0
+    except OrderReportError as error:
+        logger.error("%s", error)
+        return 1
+    except Exception:
+        logger.exception("Unexpected error while creating the order report.")
+        return 1
 
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())
