@@ -30,7 +30,7 @@ REPORT_FILES = (
 )
 
 
-def run_original_program(tmp_path: Path) -> subprocess.CompletedProcess:
+def run_program(tmp_path: Path) -> subprocess.CompletedProcess:
     """Copy the entry point, package, and data, then run the script in tmp_path."""
     shutil.copy2(ORIGINAL_SCRIPT, tmp_path / "order_report.py")
     shutil.copytree(
@@ -63,8 +63,8 @@ def read_report(path: Path) -> pd.DataFrame:
 
 @pytest.fixture
 def isolated_run(tmp_path: Path) -> tuple[subprocess.CompletedProcess, Path]:
-    """Run the original program once per test in a fresh temporary directory."""
-    completed = run_original_program(tmp_path)
+    """Run the program once per test in a fresh temporary directory."""
+    completed = run_program(tmp_path)
     return completed, tmp_path / "output"
 
 
